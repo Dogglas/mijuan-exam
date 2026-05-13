@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>密卷模考系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#333}
+.header{background:linear-gradient(135deg,#1a2a6c,#2d4373);color:#fff;padding:20px;text-align:center}
+.header h1{font-size:20px}
+.container{max-width:780px;margin:0 auto;padding:16px}
+.upload-box{background:#fff;border:2px dashed #aaa;border-radius:12px;padding:40px;text-align:center;cursor:pointer;margin:20px 0}
+.upload-box:hover{border-color:#1a2a6c;background:#f8f9ff}
+.upload-box.dragover{border-color:#1a2a6c;background:#eef0ff}
+.upload-box .big{font-size:40px;margin-bottom:8px}.upload-box .txt{font-size:16px;color:#666}
+.hidden{display:none!important}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.q-header{display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px;color:#999}
+.q-content{font-size:16px;line-height:1.8;margin-bottom:16px}.q-content img{max-width:100%;margin:6px 0;border-radius:4px}
+.opt{display:flex;gap:10px;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.opt:hover{border-color:#1a2a6c;background:#f8f9ff}
+.opt.sel{border-color:#1a2a6c;background:#eef0ff}
+.opt .k{width:26px;height:26px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.opt.sel .k{background:#1a2a6c;color:#fff}
+.opt.cor{border-color:#10b981;background:#ecfdf5}.opt.cor .k{background:#10b981;color:#fff}
+.opt.wro{border-color:#ef4444;background:#fef2f2;cursor:default}.opt.wro .k{background:#ef4444;color:#fff}
+.opt.disabled{cursor:default;pointer-events:none}
+.result-box{display:none;padding:14px;border-radius:8px;margin:12px 0;font-size:14px;line-height:1.7}
+.result-box.ok{display:block;background:#ecfdf5;border:1px solid #a7f3d0}
+.result-box.fail{display:block;background:#fef2f2;border:1px solid #fecaca}
+.result-box .label{font-weight:600;margin-bottom:4px}
+.result-box .analysis{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.08)}
+.toolbar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-blue{background:#1a2a6c;color:#fff}.btn-blue:hover{background:#2d4373}
+.btn-green{background:#10b981;color:#fff}.btn-green:hover{background:#059669}
+.btn-red{background:#ef4444;color:#fff}.btn-red:hover{background:#dc2626}
+.btn-gray{background:#e5e7eb;color:#333}.btn-gray:hover{background:#d1d5db}
+.btn-orange{background:#f59e0b;color:#fff}.btn-orange:hover{background:#d97706}
+.nav-dots{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.nd{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:2px solid #e0e0e0;cursor:pointer;font-size:12px;font-weight:600}
+.nd:hover{border-color:#1a2a6c}
+.nd.done{border-color:#1a2a6c;background:#eef0ff}
+.nd.ok{border-color:#10b981;background:#ecfdf5}
+.nd.fail{border-color:#ef4444;background:#fef2f2}
+.nd.cur{box-shadow:0 0 0 3px rgba(26,42,108,0.2)}
+.timer-bar{text-align:center;font-size:36px;font-weight:800;color:#1a2a6c;margin:8px 0;font-variant-numeric:tabular-nums}
+.timer-bar.warn{color:#f59e0b}.timer-bar.danger{color:#ef4444;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.stats-box{text-align:center;padding:20px}
+.stats-box .big-score{font-size:64px;font-weight:800}
+.stats-box .big-score.pass{color:#10b981}.stats-box .big-score.fail{color:#ef4444}
+.stat-row{display:flex;gap:12px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.stat-item{background:#f8fafc;padding:14px 22px;border-radius:8px;text-align:center;min-width:80px}
+.stat-item .num{font-size:28px;font-weight:800}.stat-item .lbl{font-size:12px;color:#999;margin-top:2px}
+.stat-row-btn{margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.watermark{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
+.wm{position:absolute;color:rgba(220,38,38,0.10);font-size:16px;font-weight:700;letter-spacing:2px;white-space:nowrap;transform:rotate(-25deg);user-select:none}
+@media print{.wm{color:rgba(220,38,38,0.06)!important}}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998}
+.modal-box{background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%}
+.modal-box h2{text-align:center;margin-bottom:16px}
+.modal-box .field{margin-bottom:12px}
+.modal-box .field label{display:block;font-size:13px;font-weight:600;margin-bottom:3px;color:#475569}
+.modal-box .field input{width:100%;padding:8px 10px;border:2px solid #ddd;border-radius:6px;font-size:14px;outline:none}
+.modal-box .field input:focus{border-color:#1a2a6c}
+.modal-box .half{display:flex;gap:8px}.modal-box .half .field{flex:1}
+.modal-box .btn-start{width:100%;padding:12px;background:#1a2a6c;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+.modal-box .btn-start:hover{background:#2d4373}
+#timerSetting{display:flex;gap:6px;align-items:center}
+#timerSetting input{width:70px;text-align:center}
+.status-bar{text-align:center;padding:8px;font-size:13px;color:#64748b;display:none}
+
+@media print{
+@page{margin:12mm 8mm}
+body{background:#fff}
+.header,.container,.modal-overlay{display:none!important}
+#printArea{display:block!important;padding:0}
+#printArea .print-header{text-align:center;font-size:11px;color:#666;padding-bottom:6px;border-bottom:1px solid #ccc;margin-bottom:12px}
+#printArea .page-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px}
+#printArea .page-sub{font-size:11px;color:#666;text-align:center;margin-bottom:16px}
+#printArea .pq{margin-bottom:16px;page-break-inside:avoid}
+#printArea .pq .pq-content{font-size:14px;line-height:1.8;margin-bottom:6px}
+#printArea .pq .pq-content img{max-width:70%}
+#printArea .pq .pq-opt{font-size:13px;line-height:1.6;margin-left:14px;margin-bottom:2px}
+#printArea .pq .pq-ans{font-size:12px;margin-top:4px;padding:4px 8px;background:#f0fdf4;border-left:3px solid #10b981}
+#printArea .pq .pq-ana{font-size:12px;margin-top:3px;padding:4px 8px;background:#fffbeb;border-left:3px solid #f59e0b;color:#92400e}
+#printArea .print-footer{text-align:center;font-size:10px;color:#999;margin-top:20px;padding-top:8px;border-top:1px solid #eee}
+}
+#printArea{display:none}
+</style>
+</head>
+<body>
+
+<div class="watermark" id="wmContainer"></div>
+
+<div class="header">
+    <h1 id="mainTitle">密卷模考系统</h1>
+</div>
+
+<div class="container">
+    <div class="modal-overlay" id="modal">
+        <div class="modal-box">
+            <h2>密卷模考系统</h2>
+            <div class="field"><label>单位名称</label><input id="inpOrg"></div>
+            <div class="half">
+                <div class="field"><label>考试科目</label><input id="inpExam"></div>
+                <div class="field"><label>时间</label><input id="inpDate"></div>
+            </div>
+            <div class="half">
+                <div class="field"><label>姓名</label><input id="inpName"></div>
+                <div class="field"><label>考号</label><input id="inpId"></div>
+            </div>
+            <div class="field">
+                <label>倒计时（填写0分即为不限时）</label>
+                <div id="timerSetting"><input id="inpMin" value="60"> <span>分钟</span></div>
+            </div>
+            <button class="btn-start" onclick="enterApp()">进入系统</button>
+        </div>
+    </div>
+
+    <div class="upload-box" id="uploadBox">
+        <div class="big">+</div>
+        <div class="txt">点击上传或拖拽JSON题库</div>
+        <input type="file" id="fileInput" accept=".json" style="display:none">
+    </div>
+
+    <div class="timer-bar hidden" id="timerArea">00:00</div>
+    <div class="status-bar" id="statusBar"></div>
+    <div class="nav-dots hidden" id="navArea"></div>
+
+    <div class="card hidden" id="qCard">
+        <div class="q-header"><span id="qNum"></span><span id="qTag" style="background:#eef0ff;padding:2px 10px;border-radius:10px;color:#1a2a6c;font-size:12px;">单选题</span></div>
+        <div class="q-content" id="qContent"></div>
+        <div id="optionsArea"></div>
+        <div class="result-box" id="resultBox"></div>
+        <div class="toolbar">
+            <button class="btn btn-gray" id="btnPrev" onclick="doPrev()">上一题</button>
+            <button class="btn btn-blue" onclick="doShowAns()">查看答案解析</button>
+            <button class="btn btn-green hidden" id="btnNext" onclick="doNext()">下一题</button>
+            <button class="btn btn-red" id="btnSubmit" onclick="doSubmitAll()">交卷</button>
+            <button class="btn btn-orange hidden" id="btnResult" onclick="showStats()">查看结果</button>
+        </div>
+    </div>
+
+    <div class="card hidden" id="statsCard">
+        <div class="stats-box">
+            <div class="big-score" id="scoreDisplay">0</div>
+            <div class="stat-row" id="statRow"></div>
+            <div class="stat-row-btn">
+                <button class="btn btn-blue" onclick="backToReview()">回顾答题</button>
+                <button class="btn btn-orange" onclick="exportPDF('wrong')">导出错题PDF</button>
+                <button class="btn btn-green" onclick="exportPDF('all')">导出全部PDF</button>
+            </div>
+            <div class="stat-row-btn" style="margin-top:8px;">
+                <button class="btn btn-blue" onclick="resetExam()">重新做题</button>
+                <button class="btn btn-gray" onclick="location.reload()">换题库</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+(function(){
+    var c=document.getElementById('wmContainer');
+    var texts=['wu444you','机密资料','wu444you','机密资料','wu444you','机密资料','wu444you','机密资料','wu444you','机密资料','wu444you','机密资料','wu444you','机密资料','wu444you'];
+    for(var i=0;i<15;i++){
+        var d=document.createElement('div');d.className='wm';
+        d.textContent=texts[i%texts.length];
+        d.style.top=(i*7)+'%';
+        d.style.left=((i*23)%85)+'%';
+        c.appendChild(d);
+    }
+})();
+
+var S={qs:[],idx:0,ans:{},res:{},wrong:[],confirmed:{},sub:false,timer:null,elapsed:0,totalSecs:0};
+
+function enterApp(){
+    var org=document.getElementById('inpOrg').value||'';
+    document.getElementById('mainTitle').textContent=(org||'密卷')+'模考系统';
+    document.title=(org||'密卷')+'模考系统';
+    S.totalSecs=(parseInt(document.getElementById('inpMin').value)||0)*60;
+    document.getElementById('modal').style.display='none';
+}
+
+var uz=document.getElementById('uploadBox');
+uz.onclick=function(){document.getElementById('fileInput').click()};
+uz.ondragover=function(e){e.preventDefault();uz.classList.add('dragover')};
+uz.ondragleave=function(){uz.classList.remove('dragover')};
+uz.ondrop=function(e){e.preventDefault();uz.classList.remove('dragover');if(e.dataTransfer.files.length)loadFile(e.dataTransfer.files[0])};
+document.getElementById('fileInput').onchange=function(e){if(e.target.files.length)loadFile(e.target.files[0])};
+
+function loadFile(f){
+    if(!f.name.endsWith('.json')){alert('请选JSON');return;}
+    var r=new FileReader();
+    r.onload=function(ev){try{init(JSON.parse(ev.target.result))}catch(e){alert('解析失败: '+e.message)}};
+    r.readAsText(f);
+}
+
+function init(data){
+    var qs=data.questions||data.data||data.list||data;
+    if(!Array.isArray(qs))qs=[];
+    if(qs.length&&typeof qs[0]=='object'&&!qs[0].content&&!qs[0].issue&&!qs[0].stem){
+        var flat=[];
+        for(var i=0;i<qs.length;i++){var g=qs[i];if(typeof g!='object')continue;for(var k in g){if(Array.isArray(g[k])){for(var j=0;j<g[k].length;j++)flat.push(g[k][j])}}}
+        if(flat.length)qs=flat;
+    }
+    if(!qs.length){alert('没找到题目');return;}
+    S.qs=[];
+    for(var i=0;i<qs.length;i++){
+        var q=qs[i];
+        S.qs.push({index:i+1,content:fmt(q.content||q.issue||q.stem||q.question||''),
+            options:fmtOpt(q.options||q.optionList||q.subjectOptions||q.sOption),
+            answer:(q.answer||q.rightAnswer||'').trim(),
+            analysis:(q.analysis||q.analysisContent||q.explanation||'').replace(/<[^>]+>/g,'')});
+    }
+    S.idx=0;S.ans={};S.res={};S.wrong=[];S.confirmed={};S.sub=false;S.elapsed=0;
+    if(S.timer){clearInterval(S.timer);S.timer=null}
+    document.getElementById('uploadBox').style.display='none';
+    document.getElementById('navArea').className='nav-dots';
+    document.getElementById('qCard').className='card';
+    document.getElementById('statsCard').className='card hidden';
+    document.getElementById('statusBar').className='status-bar';
+    if(S.totalSecs>0){document.getElementById('timerArea').className='timer-bar';startTimer();}
+    refresh();showQ();
+}
+
+function fmt(s){
+    if(!s)return'';
+    s=s.replace(/「([^」]+?\.(jpe?g|png|gif|webp))」/gi,function(m,p){
+        var url=p.indexOf('http')===0?p:'https://img.yunyxzx.com/'+p.replace(/^[.\/\\]+/,'');
+        return '<img src="'+url+'" style="max-width:100%;margin:6px 0;border-radius:4px;"/>'});
+    return s.replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/&nbsp;/g,' ').trim();
+}
+
+function fmtOpt(o){
+    if(!o)return[];
+    if(typeof o==='string')return o.split('|').map(function(s){var m=s.match(/^([A-E])\.(.+)/);return m?{k:m[1],v:m[2]}:{k:s[0]||'',v:s.slice(1)||s}});
+    if(Array.isArray(o))return o.map(function(it){return typeof it==='string'?{k:it[0]||'',v:it.slice(1)||it}:{k:it.key||it.optionKey||'',v:it.value||it.content||it.text||''}});
+    return[];
+}
+
+function startTimer(){
+    if(S.timer)clearInterval(S.timer);
+    S.timer=setInterval(function(){
+        S.elapsed++;var remain=S.totalSecs-S.elapsed;
+        if(remain<=0&&S.totalSecs>0){clearInterval(S.timer);S.timer=null;doSubmitAll();return;}
+        updateTimer(remain);
+    },1000);
+    updateTimer(S.totalSecs);
+}
+
+function updateTimer(remain){
+    var el=document.getElementById('timerArea');
+    if(S.totalSecs<=0){el.className='timer-bar hidden';return;}
+    var m=String(Math.floor(Math.abs(remain)/60)).padStart(2,'0');
+    var s=String(Math.abs(remain)%60).padStart(2,'0');
+    el.textContent=m+':'+s;el.className='timer-bar';
+    if(remain<60)el.classList.add('danger');else if(remain<300)el.classList.add('warn');
+}
+
+function showQ(){
+    var q=S.qs[S.idx];if(!q)return;
+    document.getElementById('qNum').textContent='第'+q.index+'题 / 共'+S.qs.length+'题';
+    document.getElementById('qContent').innerHTML=q.content;
+    var oa=document.getElementById('optionsArea');oa.innerHTML='';
+    for(var i=0;i<q.options.length;i++){
+        var o=q.options[i],d=document.createElement('div');d.className='opt';
+        var ua=S.ans[q.index];
+        if(S.sub||S.confirmed[q.index]){
+            d.className+=' disabled';
+            if(o.k===q.answer)d.className+=' cor';
+            if(ua===o.k&&o.k!==q.answer)d.className+=' wro';
+        }else{
+            if(ua===o.k)d.className+=' sel';
+            d.onclick=(function(key){return function(){if(!S.sub){S.ans[q.index]=key;showQ()}}})(o.k);
+        }
+        d.innerHTML='<div class="k">'+o.k+'</div><div>'+o.v+'</div>';oa.appendChild(d);
+    }
+    var cf=S.confirmed[q.index]||S.sub;
+    document.getElementById('btnPrev').className='btn btn-gray'+(S.idx===0?' hidden':'');
+    document.getElementById('btnNext').className='btn btn-green'+(S.idx<S.qs.length-1?'':' hidden');
+    document.getElementById('btnSubmit').className='btn btn-red'+(S.sub?' hidden':'');
+    document.getElementById('btnResult').className='btn btn-orange'+(S.sub?'':' hidden');
+    var rb=document.getElementById('resultBox');
+    if(cf){var ok=S.res[q.index]==='cor';rb.className='result-box '+(ok?'ok':'fail');rb.innerHTML='<div class="label">'+(ok?'正确':'错误')+'</div><div>你的答案: '+(S.ans[q.index]||'未答')+' | 正确答案: '+q.answer+'</div><div class="analysis">'+q.analysis+'</div>';}
+    else rb.className='result-box';
+    if(S.sub){var cor=0;for(var k in S.res){if(S.res[k]==='cor')cor++;}document.getElementById('statusBar').textContent='已交卷 | '+cor+'/'+S.qs.length+'正确';}else{document.getElementById('statusBar').textContent='';}
+    refresh();
+}
+
+function doShowAns(){
+    var q=S.qs[S.idx];if(!q)return;
+    if(S.sub){showQ();return;}
+    var ua=S.ans[q.index];if(!ua){S.ans[q.index]='';ua='';}
+    S.res[q.index]=ua===q.answer?'cor':'wro';
+    if(S.res[q.index]==='wro'&&S.wrong.indexOf(q.index)<0)S.wrong.push(q.index);
+    S.confirmed[q.index]=true;showQ();
+}
+
+function doPrev(){if(S.idx>0){S.idx--;showQ()}}
+function doNext(){if(S.idx<S.qs.length-1){S.idx++;showQ()}}
+
+function doSubmitAll(){
+    if(S.timer){clearInterval(S.timer);S.timer=null}
+    S.sub=true;S.res={};S.wrong=[];
+    for(var i=0;i<S.qs.length;i++){var q=S.qs[i];var ua=S.ans[q.index];S.res[q.index]=(!ua||ua!==q.answer)?'wro':'cor';if(S.res[q.index]==='wro')S.wrong.push(q.index);S.confirmed[q.index]=true;}
+    document.getElementById('timerArea').className='timer-bar hidden';showQ();
+}
+
+function backToReview(){
+    document.getElementById('statsCard').className='card hidden';document.getElementById('qCard').className='card';document.getElementById('navArea').className='nav-dots';S.idx=0;showQ();
+}
+
+function refresh(){
+    var el=document.getElementById('navArea');el.innerHTML='';
+    for(var i=0;i<S.qs.length;i++){
+        var d=document.createElement('div');d.className='nd';d.textContent=S.qs[i].index;
+        if(S.sub)d.className+=' '+(S.res[S.qs[i].index]==='cor'?'ok':'fail');
+        else if(S.confirmed[S.qs[i].index])d.className+=' '+(S.res[S.qs[i].index]==='cor'?'ok':'fail');
+        else if(S.ans[S.qs[i].index])d.className+=' done';
+        if(i===S.idx)d.className+=' cur';
+        d.onclick=(function(idx){return function(){S.idx=idx;showQ()}})(i);el.appendChild(d);
+    }
+}
+
+function showStats(){
+    document.getElementById('qCard').className='card hidden';document.getElementById('navArea').className='nav-dots hidden';
+    document.getElementById('timerArea').className='timer-bar hidden';document.getElementById('statusBar').className='status-bar hidden';
+    document.getElementById('statsCard').className='card';
+    var total=S.qs.length,cor=0;for(var k in S.res){if(S.res[k]==='cor')cor++;}
+    var score=Math.round(cor/total*100);
+    document.getElementById('scoreDisplay').textContent=score+'%';
+    document.getElementById('scoreDisplay').className='big-score '+(score>=60?'pass':'fail');
+    var usedStr='';
+    if(S.elapsed>0){var h=Math.floor(S.elapsed/3600),m=Math.floor(S.elapsed%3600/60),s=S.elapsed%60;usedStr='用时: '+(h?h+'时':'')+m+'分'+s+'秒';}
+    document.getElementById('statRow').innerHTML=
+        '<div class="stat-item"><div class="num" style="color:#1a2a6c">'+total+'</div><div class="lbl">总题</div></div>'
+        +'<div class="stat-item"><div class="num" style="color:#10b981">'+cor+'</div><div class="lbl">正确</div></div>'
+        +'<div class="stat-item"><div class="num" style="color:#ef4444">'+(total-cor)+'</div><div class="lbl">错误</div></div>'
+        +'<div class="stat-item"><div class="num" style="color:#f59e0b">'+score+'</div><div class="lbl">正确率%</div></div>'
+        +'<div class="stat-item" style="grid-column:1/-1"><div class="num" style="color:#1a2a6c;font-size:18px;">'+usedStr+'</div></div>';
+}
+
+function resetExam(){
+    S.ans={};S.res={};S.wrong=[];S.confirmed={};S.sub=false;S.idx=0;S.elapsed=0;
+    if(S.timer){clearInterval(S.timer);S.timer=null}
+    document.getElementById('statsCard').className='card hidden';document.getElementById('qCard').className='card';document.getElementById('statusBar').className='status-bar';
+    if(S.totalSecs>0){document.getElementById('timerArea').className='timer-bar';startTimer();}
+    refresh();showQ();
+}
+
+function exportPDF(mode){
+    var qs=[];
+    if(mode==='wrong'){
+        if(S.wrong.length===0){alert('没有错题');return;}
+        qs=S.wrong.map(function(idx){var q=S.qs.find(function(x){return x.index===idx});if(!q)return null;return{idx:q.index,content:q.content,options:q.options,answer:q.answer,analysis:q.analysis,userAns:S.ans[idx]||''}}).filter(function(x){return x});
+    }else{
+        qs=S.qs.map(function(q,i){return{idx:i+1,content:q.content,options:q.options,answer:q.answer,analysis:q.analysis,userAns:S.ans[q.index]||''}});
+    }
+    genPDF(qs,mode);
+}
+
+function genPDF(qs,mode){
+    var org=document.getElementById('inpOrg').value||'';
+    var exam=document.getElementById('inpExam').value||'';
+    var date=document.getElementById('inpDate').value||'';
+    var name=document.getElementById('inpName').value||'';
+    var sid=document.getElementById('inpId').value||'';
+    var modeName=mode==='wrong'?'错题精选':'全部题目';
+    var title=document.getElementById('mainTitle').textContent;
+    var now=new Date();
+    var sysTime=now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日';
+    var durStr='';
+    if(S.elapsed>0){var h=Math.floor(S.elapsed/3600),m=Math.floor(S.elapsed%3600/60),s=S.elapsed%60;durStr='用时: '+(h?h+'时':'')+m+'分'+s+'秒';}
+    var html='<div class="print-header">密卷模考系统 | 微信: wu444you</div>';
+    html+='<div class="page-title">'+title+' - '+modeName+'</div>';
+    html+='<div class="page-sub">';
+    if(org)html+=org;if(exam)html+=' / '+exam;if(date)html+=' / '+date;
+    if(name||sid)html+=' | '+(name?'姓名: '+name:'')+(sid?' 考号: '+sid:'');
+    html+=' | '+sysTime;if(durStr)html+=' | '+durStr;
+    html+=' | 共 '+qs.length+' 题</div>';
+    for(var i=0;i<qs.length;i++){
+        var q=qs[i];
+        html+='<div class="pq">';
+        html+='<div class="pq-content">'+q.idx+'. '+q.content+'</div>';
+        for(var j=0;j<q.options.length;j++)html+='<div class="pq-opt">'+q.options[j].k+'. '+q.options[j].v+'</div>';
+        html+='<div class="pq-ans">答案: '+q.answer+(q.userAns?' (你的选择: '+q.userAns+')':'')+'</div>';
+        if(q.analysis)html+='<div class="pq-ana">解析: '+q.analysis+'</div>';
+        html+='</div>';
+    }
+    html+='<div class="print-footer">密卷模考系统 | 更多密卷请加微信: wu444you</div>';
+    document.getElementById('printArea').innerHTML=html;
+    document.getElementById('printArea').style.display='block';
+    setTimeout(function(){window.print()},300);
+    setTimeout(function(){document.getElementById('printArea').style.display='none'},1000);
+}
+console.log('Loaded - No AI version');
+</script>
+</body>
+</html>

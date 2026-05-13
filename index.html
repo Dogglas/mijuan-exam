@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>密卷模考系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Microsoft YaHei",sans-serif;background:#f5f7fa;color:#333;padding-bottom:70px}
+/* 头部 */
+.header{background:linear-gradient(135deg,#1a2a6c,#2d4373);color:#fff;padding:16px 20px;text-align:center}
+.header h1{font-size:18px}.header .sub{font-size:12px;opacity:0.8;margin-top:2px}
+/* 底部导航 */
+.tab-bar{position:fixed;bottom:0;left:0;width:100%;background:#fff;display:flex;border-top:1px solid #e2e8f0;z-index:9999;box-shadow:0 -2px 8px rgba(0,0,0,0.05)}
+.tab-item{flex:1;padding:8px 0;text-align:center;cursor:pointer;font-size:11px;color:#94a3b8;transition:all .2s}
+.tab-item.active{color:#1a2a6c}
+.tab-item .icon{font-size:20px;display:block;margin-bottom:1px}
+.tab-item .label{font-size:11px}
+/* 页面容器 */
+.page{padding:12px;display:none}
+.page.active{display:block}
+/* 卡片 */
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.card-title{font-size:14px;font-weight:600;margin-bottom:12px;color:#1e293b}
+/* 密卷卡片 */
+.prod-card{display:flex;align-items:center;padding:14px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.prod-card:active{background:#f1f5f9}
+.prod-card .icon-box{width:44px;height:44px;border-radius:10px;background:#eef0ff;display:flex;align-items:center;justify-content:center;font-size:20px;margin-right:14px;flex-shrink:0}
+.prod-card .info{flex:1}
+.prod-card .info .name{font-size:14px;font-weight:600;color:#1e293b}
+.prod-card .info .meta{font-size:12px;color:#94a3b8;margin-top:2px}
+.prod-card .arrow{color:#cbd5e1;font-size:18px}
+/* 题目 */
+.q-header{display:flex;justify-content:space-between;margin-bottom:14px;font-size:13px;color:#94a3b8}
+.q-content{font-size:15px;line-height:1.8;margin-bottom:18px;color:#1e293b}
+.q-content img{max-width:100%;margin:6px 0;border-radius:4px}
+.opt{display:flex;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.opt:active{background:#f1f5f9}
+.opt .k{width:26px;height:26px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
+.opt.sel{border-color:#1a2a6c;background:#eef0ff}.opt.sel .k{background:#1a2a6c;color:#fff}
+.opt.cor{border-color:#10b981;background:#ecfdf5}.opt.cor .k{background:#10b981;color:#fff}
+.opt.wro{border-color:#ef4444;background:#fef2f2}.opt.wro .k{background:#ef4444;color:#fff}
+.opt.disabled{cursor:default;pointer-events:none}
+.result-box{display:none;padding:12px;border-radius:8px;margin:12px 0;font-size:13px;line-height:1.7}
+.result-box.ok{display:block;background:#ecfdf5;border:1px solid #a7f3d0}
+.result-box.fail{display:block;background:#fef2f2;border:1px solid #fecaca}
+.result-box .analysis{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.08)}
+/* 按钮 */
+.btn{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn:active{opacity:0.8}
+.btn-primary{background:#1a2a6c;color:#fff}
+.btn-success{background:#10b981;color:#fff}
+.btn-danger{background:#ef4444;color:#fff}.btn-pri{background:#1a2a6c;color:#fff}.btn-pri:hover{background:#2d4373}
+.btn-gray{background:#f1f5f9;color:#64748b}
+.btn-sm{padding:6px 14px;font-size:12px}
+.toolbar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+/* 导航点 */
+.nav-dots{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.nd{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:2px solid #e2e8f0;cursor:pointer;font-size:12px;font-weight:600;transition:all .1s}
+.nd.done{border-color:#1a2a6c;background:#eef0ff;color:#1a2a6c}
+.nd.ok{border-color:#10b981;background:#ecfdf5;color:#10b981}
+.nd.fail{border-color:#ef4444;background:#fef2f2;color:#ef4444}
+.nd.cur{border-color:#1a2a6c;box-shadow:0 0 0 3px rgba(26,42,108,0.15)}
+/* 计时 */
+.timer-bar{text-align:center;font-size:32px;font-weight:800;color:#1a2a6c;margin:8px 0}
+.timer-bar.warn{color:#f59e0b}.timer-bar.danger{color:#ef4444;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+/* 历史 */
+.history-item{padding:12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px}
+.history-item:active{background:#f8f9ff}
+/* 个人 */
+.profile-row{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f1f5f9}
+.profile-row:last-child{border:none}
+.profile-row .label{font-size:13px;color:#64748b;flex:1}
+.profile-row .value{font-size:13px;font-weight:500;color:#1e293b}
+/* 弹窗 */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998}
+.modal-box{background:#fff;border-radius:16px;padding:28px;max-width:400px;width:90%}
+.modal-box h3{text-align:center;margin-bottom:16px;font-size:17px}
+.modal-box .field{margin-bottom:12px}
+.modal-box .field label{display:block;font-size:13px;font-weight:600;margin-bottom:3px;color:#475569}
+.modal-box .field input{width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;outline:none}
+.modal-box .field input:focus{border-color:#1a2a6c}
+.modal-box .btn-start{width:100%;padding:12px;background:#1a2a6c;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+.modal-box .auth-switch{text-align:center;margin-top:8px;font-size:13px;color:#94a3b8;cursor:pointer}
+.modal-box .auth-error{font-size:12px;color:#ef4444;text-align:center;display:none;margin-bottom:8px}
+/* 统计 */
+.stats-box{text-align:center;padding:16px}
+.stats-box .big-score{font-size:48px;font-weight:800}
+.stats-box .big-score.pass{color:#10b981}.stats-box .big-score.fail{color:#ef4444}
+.stat-row{display:flex;gap:8px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+.stat-item{background:#f8fafc;padding:12px 16px;border-radius:8px;text-align:center;min-width:70px}
+.stat-item .num{font-size:24px;font-weight:800;color:#1a2a6c}.stat-item .lbl{font-size:11px;color:#94a3b8;margin-top:2px}
+.hidden{display:none!important}
+/* 水印 */
+.watermark{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;overflow:hidden}
+.wm{position:absolute;color:rgba(220,38,38,0.08);font-size:16px;font-weight:700;letter-spacing:2px;white-space:nowrap;transform:rotate(180deg);user-select:none}
+</style>
+</head>
+<body>
+
+<div class="watermark" id="wmContainer"></div>
+<div class="header">
+    <h1 id="mainTitle">密卷模考系统</h1>
+    <div class="sub" id="headerSub">加载中...</div>
+</div>
+
+<!-- 登录弹窗 -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal-box">
+        <h3 id="authTitle">邮箱登录</h3>
+        <div class="auth-error" id="authError"></div>
+        <div class="field"><label>邮箱</label><input id="inpLogin" type="email" placeholder="输入邮箱地址"></div>
+        <div class="field"><label>密码</label><input id="inpPwd" type="password" placeholder="至少6位"></div>
+        <div class="field" id="pcf" style="display:none;"><label>确认密码</label><input id="inpPwd2" type="password" placeholder="再次输入"></div>
+        <div class="field" id="nf" style="display:none;"><label>昵称</label><input id="inpNick" placeholder="选填"></div>
+        <button class="btn-start" id="authBtn" onclick="doAuth()">登录</button>
+        <div class="auth-switch" id="authSwitch" onclick="ta()">没有账号？点此注册</div>
+    </div>
+</div>
+
+<!-- 主内容 -->
+<div id="pageTaoti" class="page active"></div>
+<div id="pageMokao" class="page"></div>
+<div id="pageHistory" class="page"></div>
+<div id="pageProfile" class="page"></div>
+<div id="pageExam" class="page" style="display:none;"></div>
+<div id="pageResult" class="page" style="display:none;"></div>
+
+<!-- 底部导航 -->
+<div class="tab-bar" id="tabBar" style="display:none;">
+    <div class="tab-item active" data-tab="taoti" onclick="switchPage('taoti')"><span class="icon">📚</span><span class="label">套题</span></div>
+    <div class="tab-item" data-tab="mokao" onclick="switchPage('mokao')"><span class="icon">📝</span><span class="label">模考</span></div>
+    <div class="tab-item" data-tab="history" onclick="switchPage('history')"><span class="icon">📋</span><span class="label">历史</span></div>
+    <div class="tab-item" data-tab="profile" onclick="switchPage('profile')"><span class="icon">👤</span><span class="label">个人</span></div>
+</div>
+
+<div id="printArea" style="display:none;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var SUPABASE_URL='https://lnohuoenppzzmiugotui.supabase.co';
+var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxub2h1b2VucHB6em1pdWdvdHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODg5NTksImV4cCI6MjA5NDI2NDk1OX0.Bg7CEZzE908TV9YQhb9xhQ5M7bCn0I9241Y2QFaVf18';
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+var MASTER_KEY='MjU0N2NmOTExMmIzNDU2',DEEPSEEK_KEY='sk-fc3c958652644102b33b1e7c50e800a0';
+var S={user:null,ir:false,qs:[],idx:0,ans:{},res:{},wrong:[],confirmed:{},sub:false,timer:null,elapsed:0,totalSecs:0,currentMode:'practice'};
+// 水印
+(function(){var c=document.getElementById('wmContainer');var ws=['机密资料','donk6nop','机密资料','993823850','机密资料'];for(var i=0;i<15;i++){var d=document.createElement('div');d.className='wm';d.textContent=ws[i%ws.length];d.style.top=(i*7)+'%';d.style.left=((i*17)%85)+'%';c.appendChild(d)}})();
+// 工具
+function bd(s){try{return atob(s)}catch(e){return''}}
+function xd(e,k){try{var d=bd(e);var m=k||MASTER_KEY;var r='';for(var i=0;i<d.length;i++)r+=String.fromCharCode(d.charCodeAt(i)^m.charCodeAt(i%m.length));return r}catch(e){return null}}
+function tr(e){var m=(e||'').toLowerCase();if(m.indexOf('already')>=0)return'该邮箱已注册';if(m.indexOf('invalid')>=0)return'邮箱或密码错误';if(m.indexOf('rate')>=0)return'操作太频繁';return e||'操作失败'}
+// 页面切换
+function switchPage(p){document.querySelectorAll('.tab-item').forEach(function(t){t.classList.toggle('active',t.dataset.tab===p)});['taoti','mokao','history','profile','exam','result'].forEach(function(id){document.getElementById('page'+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle('active',id===p)});if(p==='taoti')loadTaoti();if(p==='history')loadHistory();if(p==='profile')loadProfile()}
+function showExam(){document.getElementById('tabBar').style.display='none';document.getElementById('pageTaoti').style.display='none';document.getElementById('pageMokao').style.display='none';document.getElementById('pageHistory').style.display='none';document.getElementById('pageProfile').style.display='none';document.getElementById('pageExam').style.display='block'}
+function hideExam(){document.getElementById('pageExam').style.display='none';document.getElementById('tabBar').style.display='flex';switchPage('taoti')}
+// 认证
+function ta(){S.ir=!S.ir;document.getElementById('authTitle').textContent=S.ir?'注册账号':'邮箱登录';document.getElementById('authBtn').textContent=S.ir?'注册':'登录';document.getElementById('authSwitch').textContent=S.ir?'已有账号？去登录':'没有账号？点此注册';document.getElementById('nf').style.display=S.ir?'block':'none';document.getElementById('pcf').style.display=S.ir?'block':'none'}
+function doAuth(){var l=document.getElementById('inpLogin').value.trim(),p=document.getElementById('inpPwd').value,e=document.getElementById('authError');if(!l||l.indexOf('@')<0){e.textContent='请输入正确邮箱';e.style.display='block';return}if(p.length<6){e.textContent='密码至少6位';e.style.display='block';return}e.style.display='none';document.getElementById('authBtn').textContent='处理中...';var n=document.getElementById('inpNick').value.trim()||l.split('@')[0];if(S.ir){var p2=document.getElementById('inpPwd2').value;if(p!==p2){e.textContent='两次密码不一致';e.style.display='block';document.getElementById('authBtn').textContent='注册';return}
+sb.auth.signUp({email:l,password:p}).then(function(r){if(r.error){e.textContent=tr(r.error.message);e.style.display='block';document.getElementById('authBtn').textContent='注册';return}if(r.data.user){sb.from('profiles').insert({id:r.data.user.id,email:l,name:n}).then(function(){})}alert('注册成功！请登录');S.ir=false;ta();document.getElementById('authBtn').textContent='登录'})}else{
+sb.auth.signInWithPassword({email:l,password:p}).then(function(r){if(r.error){e.textContent=tr(r.error.message);e.style.display='block';document.getElementById('authBtn').textContent='登录';return}S.user=r.data.user;document.getElementById('authModal').style.display='none';document.getElementById('tabBar').style.display='flex';document.getElementById('headerSub').textContent='已登录';loadTaoti();checkAutoSave()}}
+function updateName(){var n=document.getElementById('pfName').value.trim();if(!n){alert('昵称不能为空');return}sb.from('profiles').update({name:n}).eq('id',S.user.id).then(function(r){if(r.error){alert('修改失败');return}alert('昵称已更新！');loadProfile()})}
+function updatePwd(){var p=document.getElementById('pfPwd').value;if(p.length<6){alert('密码至少6位');return}sb.auth.updateUser({password:p}).then(function(r){if(r.error){alert('修改失败: '+r.error.message);return}alert('密码已修改，下次登录生效！');document.getElementById('pfPwd').value=''})}
+function logout(){sb.auth.signOut().then(function(){location.reload()})}
+// 套题
+function loadTaoti(){
+    if(!S.user){document.getElementById('pageTaoti').innerHTML='<div style="text-align:center;padding:60px 20px;color:#94a3b8;font-size:14px;">请先登录</div>';return}
+    document.getElementById('pageTaoti').innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>'
+    sb.from('user_products').select('product_id,status,products!inner(id,name,category,encrypted_data,question_count,description)').eq('user_id',S.user.id).eq('status',0).then(function(r){
+        var el=document.getElementById('pageTaoti');
+        if(r.error||!r.data||!r.data.length){el.innerHTML='<div style="text-align:center;padding:60px 20px;"><div style="font-size:40px;margin-bottom:12px;">📚</div><div style="color:#94a3b8;">暂无可用密卷</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px;">请联系购买</div></div>';return}
+        var html='';r.data.forEach(function(i){var p=i.products;var cat=p.category?'<span style="background:#eef0ff;padding:2px 8px;border-radius:4px;font-size:11px;color:#1a2a6c;margin-right:6px;">'+p.category+'</span>':'';
+        html+='<div class="prod-card" onclick="startProduct(\''+p.id+'\',\'practice\')"><div class="icon-box">📖</div><div class="info"><div class="name">'+p.name+'</div><div class="meta">'+cat+p.question_count+'题</div></div><div class="arrow">›</div></div>'});
+        el.innerHTML=html;
+    })
+}
+// 模考
+function loadMokao(){if(!S.user){document.getElementById('pageMokao').innerHTML='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">请先登录</div>';return}
+    document.getElementById('pageMokao').innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>'
+    sb.from('user_products').select('product_id,status,products!inner(id,name,category,encrypted_data,question_count,description)').eq('user_id',S.user.id).eq('status',0).then(function(r){
+        var el=document.getElementById('pageMokao');if(r.error||!r.data||!r.data.length){el.innerHTML='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">暂无可用密卷</div>';return}
+        var html='';r.data.forEach(function(i){var p=i.products;
+        html+='<div class="prod-card" onclick="startProduct(\''+p.id+'\',\'exam\')"><div class="icon-box">📝</div><div class="info"><div class="name">'+p.name+'</div><div class="meta">模拟考试 | '+p.question_count+'题 | 限时作答</div></div><div class="arrow">›</div></div>'});
+        el.innerHTML=html;
+    })
+}
+// 历史
+function loadHistory(){if(!S.user){document.getElementById('pageHistory').innerHTML='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">请先登录</div>';return}
+    document.getElementById('pageHistory').innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8;">加载中...</div>'
+    sb.from('exams').select('*').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(50).then(function(r){var el=document.getElementById('pageHistory');if(r.error||!r.data||!r.data.length){el.innerHTML='<div style="text-align:center;padding:60px 20px;"><div style="font-size:40px;margin-bottom:12px;">📋</div><div style="color:#94a3b8;">暂无考试记录</div></div>';return}
+        var html='<div class="card-title" style="padding:0 0 8px 4px;">共 '+r.data.length+' 条记录</div>';r.data.forEach(function(e){html+='<div class="history-item" onclick="restoreExam(\''+e.id+'\')"><span style="color:#1a2a6c;font-weight:600;">'+(e.title||'密卷')+'</span> | 得分:'+e.score+'% | 正确:'+e.correct_count+'/'+e.total_questions+'<br><span style="font-size:11px;color:#94a3b8;">'+(e.created_at?e.created_at.split('T')[0]:'')+'</span></div>'});
+        el.innerHTML=html
+    })
+}
+function restoreExam(eid){if(!confirm('恢复此记录？'))return;sb.from('exams').select('*').eq('id',eid).single().then(function(r){if(r.error||!r.data)return;var d=r.data.json_data;if(!d)return;S.qs=d.questions||[];S.ans=d.answers||{};S.res=d.results||{};S.wrong=d.wrong||[];S.confirmed=d.confirmed||{};S.sub=true;S.idx=0;document.getElementById('mainTitle').textContent=r.data.title;renderExam()})}
+// 个人
+function loadProfile(){if(!S.user){document.getElementById('pageProfile').innerHTML='<div style="text-align:center;padding:60px 20px;color:#94a3b8;">请先登录</div>';return}
+    var email=S.user.email||'';sb.from('profiles').select('*').eq('id',S.user.id).single().then(function(r){var name='';var regTime='';if(r.data&&r.data.name)name=r.data.name;if(r.data&&r.data.created_at)regTime=r.data.created_at.split('T')[0];
+    document.getElementById('pageProfile').innerHTML='<div class="card"><div style="text-align:center;padding:12px;"><div style="font-size:36px;">👤</div><div style="font-size:16px;font-weight:600;margin-top:6px;">'+(name||'用户')+'</div><div style="font-size:13px;color:#94a3b8;">'+email+'</div></div></div><div class="card"><div class="profile-row"><span class="label">邮箱</span><span class="value">'+email+'</span></div><div class="profile-row"><span class="label">昵称</span><input id="pfName" value="'+(name||'')+'" style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;font-size:13px;width:160px;text-align:right;"><button class="btn btn-pri btn-sm" onclick="updateName()" style="margin-left:4px;">保存</button></div><div class="profile-row"><span class="label">注册时间</span><span class="value">'+regTime+'</span></div><div class="profile-row"><span class="label">修改密码</span><input type="password" id="pfPwd" placeholder="新密码" style="border:1px solid #ddd;border-radius:4px;padding:4px 8px;font-size:13px;width:140px;"><button class="btn btn-pri btn-sm" onclick="updatePwd()" style="margin-left:4px;">修改</button></div></div><div style="padding:12px;text-align:center;"><button class="btn btn-danger" onclick="logout()">退出登录</button></div>'})
+}
+// 开始答题
+function startProduct(pid,mode){
+    sb.from('products').select('*').eq('id',pid).single().then(function(r){
+        if(r.error||!r.data){alert('加载失败');return}
+        var p=r.data;var dec=xd(p.encrypted_data,MASTER_KEY);if(!dec){alert('解密失败');return}
+        try{var data=JSON.parse(dec);S.currentMode=mode;S.qs=[];var qs=data.questions||data.data||data.list||data;if(!Array.isArray(qs))qs=[];if(qs.length&&typeof qs[0]=='object'&&!qs[0].content&&!qs[0].issue){var flat=[];for(var i=0;i<qs.length;i++){var g=qs[i];if(typeof g!='object')continue;for(var k in g){if(Array.isArray(g[k])){for(var j=0;j<g[k].length;j++)flat.push(g[k][j])}}}if(flat.length)qs=flat}
+        for(var i=0;i<qs.length;i++){var q=qs[i];S.qs.push({index:i+1,content:fm(q.content||q.issue||q.stem||q.question||''),options:fo(q.options||q.optionList||q.subjectOptions||q.sOption),answer:(q.answer||q.rightAnswer||'').trim(),analysis:(q.analysis||q.analysisContent||q.explanation||'').replace(/<[^>]+>/g,'')})}
+        S.idx=0;S.ans={};S.res={};S.wrong=[];S.confirmed={};S.sub=false;S.elapsed=0;if(S.timer){clearInterval(S.timer);S.timer=null}
+        document.getElementById('mainTitle').textContent=p.name;document.getElementById('headerSub').textContent=mode==='exam'?'模考模式':'练习模式';showExam();renderExam()}catch(e){alert('解析失败')}
+    })
+}
+function fm(s){if(!s)return'';s=s.replace(/「([^」]+?\.(jpe?g|png|gif|webp))」/gi,function(m,p){var u=p.indexOf('http')===0?p:'https://img.yunyxzx.com/'+p.replace(/^[.\/\\]+/,'');return '<img src="'+u+'" style="max-width:100%;margin:6px 0;border-radius:4px;">'});return s.replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/&nbsp;/g,' ').trim()}
+function fo(o){if(!o)return[];if(typeof o==='string')return o.split('|').map(function(s){var m=s.match(/^([A-E])\.(.+)/);return m?{k:m[1],v:m[2]}:{k:s[0]||'',v:s.slice(1)||s}});if(Array.isArray(o))return o.map(function(i){return typeof i==='string'?{k:i[0]||'',v:i.slice(1)||i}:{k:i.key||i.optionKey||'',v:i.value||i.content||i.text||''}});return[]}
+
+// 渲染题目
+// 自动保存做题进度（每答一题存到localStorage）
+function autoSave(){
+    if(!S.qs||!S.qs.length)return;
+    var data={qs:S.qs,ans:S.ans,res:S.res,wrong:Array.from(S.wrong),confirmed:S.confirmed,sub:S.sub,idx:S.idx,elapsed:S.elapsed,mode:S.currentMode,title:document.getElementById('mainTitle').textContent,savedAt:new Date().toISOString()};
+    try{localStorage.setItem('exam_progress',JSON.stringify(data))}catch(e){}
+}
+
+// 恢复做题进度
+function checkAutoSave(){
+    try{
+        var raw=localStorage.getItem('exam_progress');
+        if(!raw)return;
+        var d=JSON.parse(raw);
+        if(!d.qs||!d.savedAt)return;
+        var age=(new Date()-new Date(d.savedAt))/3600000;
+        if(age>72){localStorage.removeItem('exam_progress');return;} // 超过72小时清除
+        if(confirm('检测到上次做题进度('+d.title+'，'+d.qs.length+'题)，是否恢复？')){
+            S.qs=d.qs||[];S.ans=d.ans||{};S.res=d.res||{};S.wrong=d.wrong||[];S.confirmed=d.confirmed||{};S.sub=d.sub||false;S.idx=d.idx||0;S.elapsed=d.elapsed||0;S.currentMode=d.mode||'practice';
+            document.getElementById('mainTitle').textContent=d.title||'密卷模考';
+            document.getElementById('headerSub').textContent=d.mode==='exam'?'模考模式':'练习模式';
+            document.getElementById('tabBar').style.display='none';
+            showExam();renderExam();
+        }else{localStorage.removeItem('exam_progress');}
+    }catch(e){localStorage.removeItem('exam_progress');}
+}
+
+function renderExam(){
+    var el=document.getElementById('pageExam');var qs=S.qs;if(!qs.length){el.innerHTML='<div style="text-align:center;padding:40px;">没有题目</div>';return}
+    var q=qs[S.idx];if(!q){showResult();return}
+    var nav='<div class="nav-dots" id="examNav">';for(var i=0;i<qs.length;i++){var cls='nd';var idx=qs[i].index;if(S.sub||S.confirmed[idx])cls+=' '+(S.res[idx]==='cor'?'ok':'fail');else if(S.ans[idx])cls+=' done';if(i===S.idx)cls+=' cur';nav+='<div class="'+cls+'" onclick="jumpTo('+i+')">'+idx+'</div>'}nav+='</div>'
+    var timer='';if(S.currentMode==='exam'&&!S.sub)timer='<div class="timer-bar" id="examTimer">00:00</div>'
+    var qhtml='<div class="q-header"><span>第'+q.index+'题 / 共'+qs.length+'题</span><span style="background:#eef0ff;padding:2px 10px;border-radius:10px;color:#1a2a6c;font-size:12px;">'+(q.type||'单选')+'</span></div><div class="q-content">'+q.content+'</div><div id="optArea">'
+    for(var i=0;i<q.options.length;i++){var o=q.options[i];var cls='opt';var ua=S.ans[q.index];if(S.sub||S.confirmed[q.index]){cls+=' disabled';if(o.k===q.answer)cls+=' cor';if(ua===o.k&&o.k!==q.answer)cls+=' wro'}else{if(ua===o.k)cls+=' sel';cls+=' onclick=\'selectOpt('+i+')\''}qhtml+='<div class="'+cls+'"><div class="k">'+o.k+'</div><div>'+o.v+'</div></div>'}
+    qhtml+='</div>'
+    var ra='<div class="result-box" id="resBox"></div>'
+    if(S.confirmed[q.index]||S.sub){var ok=S.res[q.index]==='cor';ra='<div class="result-box '+(ok?'ok':'fail')+'"><div>'+(ok?'正确':'错误')+'</div><div>你的答案:'+(S.ans[q.index]||'未答')+' | 正确答案:'+q.answer+'</div>'+(q.analysis?'<div class="analysis">'+q.analysis+'</div>':'')+'</div>'}
+    var btns='<div class="toolbar">'
+    if(S.idx>0)btns+='<button class="btn btn-gray" onclick="prevQ()">上一题</button>'
+    if(!S.confirmed[q.index]&&!S.sub)btns+='<button class="btn btn-primary" onclick="confirmAns()">查看答案解析</button>'
+    if(S.confirmed[q.index]||S.sub){if(S.idx<qs.length-1)btns+='<button class="btn btn-success" onclick="nextQ()">下一题</button>';else btns+='<button class="btn btn-success" onclick="showResult()">查看成绩</button>'}
+    if(S.currentMode==='exam'&&!S.sub)btns+='<button class="btn btn-danger" onclick="submitExam()">交卷</button>'
+    if(S.sub)btns+='<button class="btn btn-danger" onclick="showResult()">查看成绩</button>'
+    btns+='</div>'
+    el.innerHTML=timer+nav+qhtml+ra+btns
+    if(S.currentMode==='exam'&&!S.sub&&!S.timer)startTimer()
+    document.getElementById('hidden',true)
+}
+function selectOpt(i){if(S.sub)return;var q=S.qs[S.idx];if(!q)return;S.ans[q.index]=q.options[i].k;renderExam();autoSave()}
+function confirmAns(){var q=S.qs[S.idx];if(!q)return;var ua=S.ans[q.index];if(!ua){ua='';S.ans[q.index]=''}S.res[q.index]=ua===q.answer?'cor':'wro';if(S.res[q.index]==='wro'&&S.wrong.indexOf(q.index)<0)S.wrong.push(q.index);S.confirmed[q.index]=true;renderExam();autoSave()
+function prevQ(){if(S.idx>0){S.idx--;renderExam()}}
+function nextQ(){if(S.idx<S.qs.length-1){S.idx++;renderExam()}else if(S.sub)showResult()}
+function jumpTo(i){S.idx=i;renderExam()}
+function startTimer(){S.elapsed=0;S.timer=setInterval(function(){S.elapsed++;var el=document.getElementById('examTimer');if(!el)return;var m=String(Math.floor(S.elapsed/60)).padStart(2,'0'),s=String(S.elapsed%60).padStart(2,'0');el.textContent=m+':'+s;el.className='timer-bar';if(S.elapsed>3600)el.classList.add('danger');else if(S.elapsed>1800)el.classList.add('warn')},1000)}
+function submitExam(){if(S.timer){clearInterval(S.timer);S.timer=null}var left=0;for(var i=0;i<S.qs.length;i++){if(!S.ans[S.qs[i].index])left++}if(left&&!confirm('还有'+left+'题未答，确定交卷？')){startTimer();return}
+S.sub=true;S.res={};S.wrong=[];for(var i=0;i<S.qs.length;i++){var q=S.qs[i];var u=S.ans[q.index];S.res[q.index]=(!u||u!==q.answer)?'wro':'cor';if(S.res[q.index]==='wro')S.wrong.push(q.index);S.confirmed[q.index]=true}S.idx=0;renderExam();autoSave();localStorage.removeItem('exam_progress')
+
+// 成绩页
+function showResult(){
+    document.getElementById('pageExam').style.display='none';document.getElementById('pageResult').style.display='block'
+    var t=S.qs.length,c=0;for(var k in S.res){if(S.res[k]==='cor')c++}var s=Math.round(c/t*100)
+    var used='';if(S.elapsed>0){var h=Math.floor(S.elapsed/3600),m=Math.floor(S.elapsed%3600/60),se=S.elapsed%60;used='用时: '+(h?h+'时':'')+m+'分'+se+'秒'}
+    var totalSecs=S.currentMode==='exam'?S.elapsed:0
+    var html='<div class="stats-box"><div class="big-score '+(s>=60?'pass':'fail')+'">'+s+'分</div><div style="font-size:13px;color:#94a3b8;margin-top:4px;">'+(used)+'</div><div class="stat-row"><div class="stat-item"><div class="num">'+t+'</div><div class="lbl">总题</div></div><div class="stat-item"><div class="num" style="color:#10b981">'+c+'</div><div class="lbl">正确</div></div><div class="stat-item"><div class="num" style="color:#ef4444">'+(t-c)+'</div><div class="lbl">错误</div></div><div class="stat-item"><div class="num" style="color:#f59e0b">'+s+'</div><div class="lbl">正确率%</div></div></div><div class="toolbar"><button class="btn btn-primary" onclick="backToReview()">回顾答题</button><button class="btn btn-success" onclick="saveToCloud()">保存成绩</button></div><div class="toolbar" style="margin-top:6px;"><button class="btn btn-gray" onclick="exportPDF(\'wrong\')">导出错题</button><button class="btn btn-gray" onclick="exportPDF(\'all\')">导出全部</button><button class="btn btn-gray" onclick="hideExam()">返回</button></div></div>'
+    document.getElementById('pageResult').innerHTML=html
+}
+function backToReview(){document.getElementById('pageResult').style.display='none';document.getElementById('pageExam').style.display='block';S.idx=0;renderExam()}
+function saveToCloud(){if(!S.user){alert('请先登录');return}if(!S.qs.length)return;var t=S.qs.length,c=0;for(var k in S.res){if(S.res[k]==='cor')c++};var s=Math.round(c/t*100)
+sb.from('exams').insert({user_id:S.user.id,title:document.getElementById('mainTitle').textContent,total_questions:t,correct_count:c,wrong_count:t-c,score:s,elapsed_seconds:S.elapsed,json_data:{questions:S.qs,answers:S.ans,results:S.res,wrong:Array.from(S.wrong),confirmed:S.confirmed}}).then(function(r){if(r.error){alert('保存失败');return}alert('已保存到云端！可在历史中查看')})}
+
+// PDF导出
+function exportPDF(mode){var qs=[];if(mode==='wrong'){if(!S.wrong.length){alert('没有错题');return}qs=S.wrong.map(function(i){var q=S.qs.find(function(x){return x.index==i});return q?{idx:q.index,content:q.content,options:q.options,answer:q.answer,analysis:q.analysis,userAns:S.ans[i]||''}:null}).filter(function(x){return x})}else qs=S.qs.map(function(q,i){return{idx:i+1,content:q.content,options:q.options,answer:q.answer,analysis:q.analysis,userAns:S.ans[q.index]||''}})
+var mn=mode==='wrong'?'错题精选':'全部题目';var d=new Date();var st=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';var ds='';if(S.elapsed>0){var h=Math.floor(S.elapsed/3600),m=Math.floor(S.elapsed%3600/60),s=S.elapsed%60;ds='用时: '+(h?h+'时':'')+m+'分'+s+'秒'}
+var h='<div class="print-header">密卷模考系统 | donk6nop | 993823850</div>';h+='<div class="page-title">'+document.getElementById('mainTitle').textContent+' - '+mn+'</div>';h+='<div class="page-sub">'+st+(ds?' | '+ds:'')+' | 共'+qs.length+'题</div>';for(var i=0;i<qs.length;i++){var q=qs[i];h+='<div class="pq"><div class="pq-content">'+q.idx+'. '+q.content+'</div>';for(var j=0;j<q.options.length;j++)h+='<div class="pq-opt">'+q.options[j].k+'. '+q.options[j].v+'</div>';h+='<div class="pq-ans">答案: '+q.answer+(q.userAns?' (你的选择: '+q.userAns+')':'')+'</div>';if(q.analysis)h+='<div class="pq-ana">解析: '+q.analysis+'</div>';h+='</div>'}h+='<div class="print-footer">密卷模考系统 | donk6nop | 993823850</div>'
+document.getElementById('printArea').innerHTML=h;document.getElementById('printArea').style.display='block';setTimeout(function(){window.print()},300);setTimeout(function(){document.getElementById('printArea').style.display='none'},1000)}
+
+// 监听tab切换加载对应内容
+var origSwitch=switchPage;switchPage=function(p){origSwitch(p);if(p==='mokao')loadMokao()}
+
+console.log('密卷模考系统 v2');
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台</title>
+<style>
+body{font-family:"Microsoft YaHei",sans-serif;background:#f0f2f5;color:#333;margin:0}
+.header{background:linear-gradient(135deg,#1a2a6c,#2d4373);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:18px}.header .info{font-size:12px;opacity:0.8}
+.container{max-width:960px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.card-title{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.login-box{max-width:340px;margin:100px auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.login-box h2{text-align:center;margin-bottom:16px}
+.login-box input{width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:6px;margin-bottom:10px;font-size:14px;outline:none;box-sizing:border-box}
+.login-box input:focus{border-color:#1a2a6c}
+.login-box button{width:100%;padding:11px;background:#1a2a6c;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer}
+.login-box .err{color:#ef4444;font-size:13px;text-align:center;display:none;margin-top:8px}
+.btn{padding:6px 14px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;display:inline-block}
+.btn-pri{background:#1a2a6c;color:#fff}.btn-pri:hover{background:#2d4373}
+.btn-suc{background:#10b981;color:#fff}.btn-suc:hover{background:#059669}
+.btn-dan{background:#ef4444;color:#fff}.btn-dan:hover{background:#dc2626}
+.btn-gry{background:#e5e7eb;color:#333}.btn-gry:hover{background:#d1d5db}
+.btn-sm{padding:4px 10px;font-size:11px}
+.user-row{display:flex;align-items:center;padding:12px 14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.user-row:hover{background:#f8f9ff;border-color:#1a2a6c}
+.user-row .ava{width:36px;height:36px;border-radius:50%;background:#eef0ff;display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:12px;flex-shrink:0}
+.user-row .info{flex:1}.user-row .info .email{font-size:13px;font-weight:500}.user-row .info .meta{font-size:11px;color:#94a3b8;margin-top:1px}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9999}
+.modal-box{background:#fff;border-radius:12px;padding:24px;max-width:500px;width:90%;max-height:85vh;overflow-y:auto}
+.modal-box h3{font-size:16px;margin-bottom:12px}
+.modal-box .f{margin-bottom:10px}.modal-box .f label{display:block;font-size:12px;font-weight:600;margin-bottom:2px;color:#475569}
+.modal-box .f input,.modal-box .f select,.modal-box .f textarea{width:100%;padding:8px 10px;border:2px solid #ddd;border-radius:6px;font-size:13px;outline:none}
+.modal-box .f textarea{font-family:monospace;min-height:50px}
+.modal-box .br{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.upz{border:2px dashed #d0d5dd;border-radius:6px;padding:14px;text-align:center;cursor:pointer;font-size:12px;color:#94a3b8;margin-bottom:6px}
+.upz:hover{border-color:#1a2a6c;background:#f8f9ff}
+.empty{text-align:center;padding:30px;color:#94a3b8;font-size:13px}
+.loading{text-align:center;padding:20px;color:#94a3b8}
+.prod-item{display:flex;align-items:center;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:4px;font-size:13px;gap:6px}
+.prod-item .nm{flex:1;font-weight:500}
+.tag{display:inline-block;padding:1px 8px;border-radius:3px;font-size:11px}
+.tag-blue{background:#eef0ff;color:#1a2a6c}.tag-green{background:#ecfdf5;color:#10b981}.tag-red{background:#fef2f2;color:#ef4444}
+.pw-wrap{position:relative;display:flex;align-items:center}.pw-wrap input{flex:1;padding-right:36px!important}.pw-wrap .eye{position:absolute;right:10px;cursor:pointer;font-size:16px;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="header"><h1>密卷管理后台</h1><div class="info" id="headerInfo">未登录</div></div>
+
+<div class="container" id="loginPage">
+    <div class="login-box">
+        <h2>管理员登录</h2>
+        <input type="text" id="adminUser" placeholder="管理员账号"><br>
+        <div class="pw-wrap"><input type="password" id="pwd" placeholder="管理员密码"><span class="eye" onclick="tp()">&#128065;</span></div>
+        <button onclick="login()">登录</button>
+        <div class="err" id="loginErr">账号或密码错误</div>
+    </div>
+</div>
+
+<div class="container" id="mainPage" style="display:none;">
+    <div class="card">
+        <div class="card-title">已注册用户 <span id="userCount"></span></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <input type="text" id="searchInput" placeholder="输入邮箱搜索..." style="flex:1;padding:8px 12px;border:2px solid #ddd;border-radius:6px;font-size:13px;">
+            <button class="btn btn-pri" onclick="loadUsers()" style="padding:8px 16px;">搜索</button>
+        </div>
+        <div id="userList"><div class="loading">加载中...</div></div>
+    </div>
+
+    <div class="modal" id="userModal">
+        <div class="modal-box">
+            <h3 id="userModalTitle">用户详情</h3>
+            <div style="font-size:12px;color:#64748b;margin-bottom:10px;" id="userModalInfo"></div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;">已授权密卷</div>
+            <div id="userProducts" style="margin-bottom:10px;"></div>
+            <div class="br">
+                <button class="btn btn-pri btn-sm" onclick="showAuth()">+ 授权</button>
+                <button class="btn btn-gry btn-sm" onclick="showPwd()">改密</button>
+                <button class="btn btn-gry btn-sm" onclick="cm('userModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="authModal">
+        <div class="modal-box">
+            <h3>授权密卷</h3>
+            <div class="f"><label>选择密卷</label><select id="authSelect"></select></div>
+            <div class="f"><label>到期（留空=永久）</label><input type="date" id="authExp"></div>
+            <div class="br"><button class="btn btn-gry" onclick="cm('authModal')">取消</button><button class="btn btn-pri" onclick="doAuth()">确认</button></div>
+        </div>
+    </div>
+
+    <div class="modal" id="pwdModal">
+        <div class="modal-box">
+            <h3>修改密码</h3>
+            <div class="f"><label>新密码</label><input type="password" id="newPwd" placeholder="至少6位"></div>
+            <div class="br"><button class="btn btn-gry" onclick="cm('pwdModal')">取消</button><button class="btn btn-pri" onclick="doPwd()">确认修改</button></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">密卷管理 <span id="prodCount"></span>
+            <button class="btn btn-suc btn-sm" onclick="showAdd()">+ 上传</button>
+        </div>
+        <div id="prodList"><div class="loading">加载中...</div></div>
+    </div>
+
+    <div class="modal" id="addModal">
+        <div class="modal-box">
+            <h3>上传新密卷</h3>
+            <div class="f"><label>名称</label><input id="apName" placeholder="如：国家电网2026笔试密卷"></div>
+            <div class="f"><label>分类</label><input id="apCat" placeholder="如：国家电网/银行/金融"></div>
+            <div class="f"><label>上传JSON文件（自动加密）</label><div class="upz" onclick="document.getElementById('apFile').click()">点击选择JSON文件</div><input type="file" id="apFile" accept=".json" style="display:none"><div id="apStatus" style="font-size:11px;color:#10b981;margin-top:4px;"></div></div>
+            <div class="f"><label>加密数据</label><textarea id="apEnc" rows="2" placeholder="上传JSON后自动填充，也可手动粘贴"></textarea></div>
+            <div class="f"><label>题数</label><input type="number" id="apCount" value="0"></div>
+            <div class="br"><button class="btn btn-gry" onclick="cm('addModal')">取消</button><button class="btn btn-suc" onclick="doAdd()">创建密卷</button></div>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-box">
+            <h3>编辑密卷</h3>
+            <div class="f"><label>名称</label><input id="epName"></div>
+            <div class="f"><label>分类</label><input id="epCat"></div>
+            <div class="br"><button class="btn btn-gry" onclick="cm('editModal')">取消</button><button class="btn btn-pri" onclick="doEdit()">保存</button></div>
+        </div>
+    </div>
+</div>
+
+<script>
+var SP_URL='https://lnohuoenppzzmiugotui.supabase.co';
+var SP_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxub2h1b2VucHB6em1pdWdvdHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODg5NTksImV4cCI6MjA5NDI2NDk1OX0.Bg7CEZzE908TV9YQhb9xhQ5M7bCn0I9241Y2QFaVf18';
+var MK='MjU0N2NmOTExMmIzNDU2';
+var su=null,se=null;
+
+function xe(d,k){try{var r='';for(var i=0;i<d.length;i++)r+=String.fromCharCode(d.charCodeAt(i)^k.charCodeAt(i%k.length));return btoa(r)}catch(e){return''}}
+function cm(id){document.getElementById(id).style.display='none'}
+function tp(){var e=document.getElementById('pwd');e.type=e.type==='password'?'text':'password'}
+
+// 通用API请求（service_role key）
+function api(path,method,body){
+    var opts={method:method||'GET',headers:{'apikey':SP_KEY,'Authorization':'Bearer '+SP_KEY,'Content-Type':'application/json','Prefer':'return=minimal'}};
+    if(body)opts.body=JSON.stringify(body);
+    return fetch(SP_URL+'/rest/v1/'+path,opts).then(function(r){
+        // 获取响应体
+        return r.text().then(function(txt){
+            var data=null;try{data=JSON.parse(txt)}catch(e){}
+            return{data:data,error:r.ok?null:{message:r.status+' '+(data&&(data.message||data.error||data.msg)||'')}};
+        });
+    });
+}
+
+function login(){
+    if(document.getElementById('adminUser').value.trim()==='admin'&&document.getElementById('pwd').value==='ADMIN888'){
+        document.getElementById('loginPage').style.display='none';
+        document.getElementById('mainPage').style.display='block';
+        document.getElementById('headerInfo').textContent='管理员已登录';
+        loadUsers();loadProds();
+    }else{document.getElementById('loginErr').style.display='block'}
+}
+
+// 用户
+function loadUsers(){
+    var el=document.getElementById('userList');el.innerHTML='<div class="loading">加载中...</div>';
+    var q=document.getElementById('searchInput').value.trim();
+    api('profiles?select=id,email,name,created_at&order=created_at.desc').then(function(r){
+        if(r.error||!Array.isArray(r.data)){el.innerHTML='<div class="empty">加载失败</div>';return}
+        document.getElementById('userCount').textContent='('+r.data.length+'人)';
+        var d=r.data;if(q)d=d.filter(function(u){return(u.email||'').toLowerCase().indexOf(q.toLowerCase())>=0});
+        if(!d.length){el.innerHTML='<div class="empty">未找到</div>';return}
+        var h='';d.forEach(function(u){h+='<div class="user-row" onclick="showUser(\''+u.id+'\')"><div class="ava">'+(u.name||'?')[0]+'</div><div class="info"><div class="email">'+(u.email||'?')+'</div><div class="meta">'+(u.name||'未设置')+' · '+(u.created_at?u.created_at.split('T')[0]:'')+'</div></div><div>></div></div>'});
+        el.innerHTML=h;
+    })
+}
+
+function showUser(uid){
+    su=uid;
+    api('profiles?select=id,email,name,created_at&id=eq.'+uid).then(function(r){
+        if(!r.data||!r.data[0]){document.getElementById('userModalTitle').textContent='用户详情';document.getElementById('userModalInfo').textContent='加载失败';return}
+        var u=r.data[0];
+        document.getElementById('userModalTitle').textContent='用户: '+(u.email||'?');
+        document.getElementById('userModalInfo').textContent='昵称: '+(u.name||'-')+' | 注册:'+(u.created_at?u.created_at.split('T')[0]:'');
+        document.getElementById('userModal').style.display='flex';
+        loadUserProds(uid);
+    });
+}
+
+function loadUserProds(uid){
+    var el=document.getElementById('userProducts');el.innerHTML='<div class="loading">加载中...</div>';
+    api('user_products?select=id,product_id,status,expires_at,products!inner(name,category)&user_id=eq.'+uid).then(function(r){
+        if(r.error||!r.data||!r.data.length){el.innerHTML='<div class="empty">无授权密卷</div>';return}
+        var h='';r.data.forEach(function(up){var p=up.products;h+='<div class="prod-item"><span class="nm">'+p.name+'</span><span class="tag tag-green">正常</span><span style="font-size:11px;color:#94a3b8;">'+(p.category||'')+(up.expires_at?' · 到期:'+up.expires_at.split('T')[0]:' · 永久')+'</span></div>'});
+        el.innerHTML=h;
+    })
+}
+
+function showAuth(){
+    var sel=document.getElementById('authSelect');sel.innerHTML='<option>加载中...</option>';
+    api('products?select=id,name').then(function(r){if(r.data){sel.innerHTML='';r.data.forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o)})}});
+    document.getElementById('authModal').style.display='flex';
+}
+
+function doAuth(){
+    var pid=document.getElementById('authSelect').value,exp=document.getElementById('authExp').value||null;
+    if(!pid){alert('请选择密卷');return}
+    api('user_products','POST',{user_id:su,product_id:parseInt(pid),status:0,expires_at:exp}).then(function(r){if(r.error){alert('授权失败: '+JSON.stringify(r.error));return}alert('授权成功！');cm('authModal');loadUserProds(su)})
+}
+
+function showPwd(){document.getElementById('newPwd').value='';document.getElementById('pwdModal').style.display='flex'}
+function doPwd(){
+    var p=document.getElementById('newPwd').value;if(p.length<6){alert('密码至少6位');return}
+    fetch(SP_URL+'/auth/v1/admin/users/'+su,{method:'PUT',headers:{'apikey':SP_KEY,'Authorization':'Bearer '+SP_KEY,'Content-Type':'application/json'},body:JSON.stringify({password:p})}).then(function(r){return r.json()}).then(function(d){if(d.error||d.msg){alert('失败:'+JSON.stringify(d));return}alert('密码已修改！');cm('pwdModal')}).catch(function(e){alert('请求失败')})
+}
+
+// 密卷
+function loadProds(){
+    var el=document.getElementById('prodList');el.innerHTML='<div class="loading">加载中...</div>';
+    api('products?select=*&order=created_at.desc').then(function(r){
+        if(r.error||!Array.isArray(r.data)){el.innerHTML='<div class="empty">加载失败</div>';return}
+        if(!r.data.length){el.innerHTML='<div class="empty">暂无密卷</div>';document.getElementById('prodCount').textContent='';return}
+        document.getElementById('prodCount').textContent='('+r.data.length+'个)';
+        var h='';r.data.forEach(function(p){h+='<div class="prod-item"><span class="nm">'+p.name+'</span><span class="tag tag-blue">'+(p.category||'未分类')+'</span><span style="font-size:11px;color:#94a3b8;">'+(p.question_count||'?')+'题 '+(p.created_at?p.created_at.split('T')[0]:'')+'</span><button class="btn btn-pri btn-sm" onclick="editProd('+p.id+',\''+(p.name||'')+'\',\''+(p.category||'')+'\')">编辑</button><button class="btn btn-dan btn-sm" onclick="delProd('+p.id+',\''+(p.name||'')+'\')">删</button></div>'});
+        el.innerHTML=h;
+    })
+}
+
+function editProd(id,name,cat){se=id;document.getElementById('epName').value=name;document.getElementById('epCat').value=cat;document.getElementById('editModal').style.display='flex'}
+function doEdit(){var n=document.getElementById('epName').value.trim(),c=document.getElementById('epCat').value.trim();if(!n){alert('名称不能为空');return}
+    api('products?id=eq.'+se,'PATCH',{name:n,category:c||null}).then(function(r){if(r.error){alert('更新失败');return}alert('已更新！');cm('editModal');loadProds()})
+}
+function delProd(id,name){if(!confirm('确定删除"'+name+'"?不可恢复！'))return;api('products?id=eq.'+id,'DELETE').then(function(r){if(r.error){alert('删除失败');return}alert('已删除');loadProds()})}
+
+// 上传
+document.getElementById('apFile').onchange=function(e){
+    if(!e.target.files[0])return;
+    var r=new FileReader();
+    r.onload=function(ev){
+        try{var d=JSON.parse(ev.target.result);var qs=d.questions||d.data||d.list||d;if(!Array.isArray(qs)){alert('未找到题目');return}
+        if(qs.length&&typeof qs[0]=='object'&&!qs[0].content&&!qs[0].issue){var flat=[];for(var i=0;i<qs.length;i++){var g=qs[i];if(typeof g!='object')continue;for(var k in g){if(Array.isArray(g[k])){for(var j=0;j<g[k].length;j++)flat.push(g[k][j])}}}if(flat.length)qs=flat}
+        var str=JSON.stringify(qs);var enc=xe(str,MK);document.getElementById('apEnc').value=JSON.stringify({v:1,c:'ok',d:enc});document.getElementById('apCount').value=qs.length;document.getElementById('apStatus').textContent='加密成功! '+qs.length+'题'}
+        catch(e){alert('解析失败: '+e.message)}
+    };r.readAsText(e.target.files[0])
+}
+
+function showAdd(){document.getElementById('apName').value='';document.getElementById('apCat').value='';document.getElementById('apEnc').value='';document.getElementById('apCount').value=0;document.getElementById('apStatus').textContent='';document.getElementById('apFile').value='';document.getElementById('addModal').style.display='flex'}
+function doAdd(){var n=document.getElementById('apName').value.trim(),e=document.getElementById('apEnc').value.trim();if(!n||!e){alert('名称和加密数据不能为空');return}
+    api('products','POST',{name:n,category:document.getElementById('apCat').value.trim()||null,encrypted_data:e,question_count:parseInt(document.getElementById('apCount').value)||0}).then(function(r){if(r.error){alert('创建失败: '+JSON.stringify(r.error));return}alert('密卷创建成功！');cm('addModal');loadProds()})}
+
+console.log('OK');
+</script>
+</body>
+</html>
