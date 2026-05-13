@@ -260,16 +260,15 @@ function renderExam(){
     btns+='</div>'
     el.innerHTML=timer+nav+qhtml+ra+btns
     if(S.currentMode==='exam'&&!S.sub&&!S.timer)startTimer()
-    document.getElementById('hidden',true)
 }
 function selectOpt(i){if(S.sub)return;var q=S.qs[S.idx];if(!q)return;S.ans[q.index]=q.options[i].k;renderExam();autoSave()}
-function confirmAns(){var q=S.qs[S.idx];if(!q)return;var ua=S.ans[q.index];if(!ua){ua='';S.ans[q.index]=''}S.res[q.index]=ua===q.answer?'cor':'wro';if(S.res[q.index]==='wro'&&S.wrong.indexOf(q.index)<0)S.wrong.push(q.index);S.confirmed[q.index]=true;renderExam();autoSave()
+function confirmAns(){var q=S.qs[S.idx];if(!q)return;var ua=S.ans[q.index];if(!ua){ua='';S.ans[q.index]=''}S.res[q.index]=ua===q.answer?'cor':'wro';if(S.res[q.index]==='wro'&&S.wrong.indexOf(q.index)<0)S.wrong.push(q.index);S.confirmed[q.index]=true;renderExam();autoSave()}
 function prevQ(){if(S.idx>0){S.idx--;renderExam()}}
 function nextQ(){if(S.idx<S.qs.length-1){S.idx++;renderExam()}else if(S.sub)showResult()}
 function jumpTo(i){S.idx=i;renderExam()}
 function startTimer(){S.elapsed=0;S.timer=setInterval(function(){S.elapsed++;var el=document.getElementById('examTimer');if(!el)return;var m=String(Math.floor(S.elapsed/60)).padStart(2,'0'),s=String(S.elapsed%60).padStart(2,'0');el.textContent=m+':'+s;el.className='timer-bar';if(S.elapsed>3600)el.classList.add('danger');else if(S.elapsed>1800)el.classList.add('warn')},1000)}
 function submitExam(){if(S.timer){clearInterval(S.timer);S.timer=null}var left=0;for(var i=0;i<S.qs.length;i++){if(!S.ans[S.qs[i].index])left++}if(left&&!confirm('还有'+left+'题未答，确定交卷？')){startTimer();return}
-S.sub=true;S.res={};S.wrong=[];for(var i=0;i<S.qs.length;i++){var q=S.qs[i];var u=S.ans[q.index];S.res[q.index]=(!u||u!==q.answer)?'wro':'cor';if(S.res[q.index]==='wro')S.wrong.push(q.index);S.confirmed[q.index]=true}S.idx=0;renderExam();autoSave();localStorage.removeItem('exam_progress')
+S.sub=true;S.res={};S.wrong=[];for(var i=0;i<S.qs.length;i++){var q=S.qs[i];var u=S.ans[q.index];S.res[q.index]=(!u||u!==q.answer)?'wro':'cor';if(S.res[q.index]==='wro')S.wrong.push(q.index);S.confirmed[q.index]=true}S.idx=0;renderExam();autoSave();localStorage.removeItem('exam_progress')}
 
 // 成绩页
 function showResult(){
