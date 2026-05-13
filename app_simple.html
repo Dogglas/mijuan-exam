@@ -138,7 +138,7 @@ body{font-family:-apple-system,"Microsoft YaHei",sans-serif;background:#f5f7fa;c
 <div id="printArea" style="display:none;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>window.supabase||document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/umd/supabase.js"><\/script>');</script>
+<script>if(!window.supabase){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2/umd/supabase.js';document.head.appendChild(s);}</script>
 <script>
 var SUPABASE_URL='https://lnohuoenppzzmiugotui.supabase.co';
 var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxub2h1b2VucHB6em1pdWdvdHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODg5NTksImV4cCI6MjA5NDI2NDk1OX0.Bg7CEZzE908TV9YQhb9xhQ5M7bCn0I9241Y2QFaVf18';
@@ -293,7 +293,7 @@ document.getElementById('printArea').innerHTML=h;document.getElementById('printA
 // 监听tab切换加载对应内容
 var origSwitch=switchPage;switchPage=function(p){origSwitch(p);if(p==='mokao')loadMokao()}
 
-console.log('密卷模考系统 v2');
+console.log('密卷模考系统 v3 - fixed');
 </script>
 </body>
 </html>
