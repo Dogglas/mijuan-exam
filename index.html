@@ -154,6 +154,8 @@ var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 var MASTER_KEY='MjU0N2NmOTExMmIzNDU2',DEEPSEEK_KEY='sk-fc3c958652644102b33b1e7c50e800a0';
 var S={user:null,ir:false,qs:[],idx:0,ans:{},res:{},wrong:[],confirmed:{},sub:false,timer:null,elapsed:0,totalSecs:0,currentMode:'practice'};
+// 恢复登录状态
+sb.auth.getSession().then(function(r){if(r.data&&r.data.session){S.user=r.data.session.user;document.getElementById('authModal').style.display='none';document.getElementById('tabBar').style.display='flex';document.getElementById('headerRight').style.display='flex';document.getElementById('headerSub').textContent='已登录';loadTaoti();checkAutoSave();loadAvatar()}else{document.getElementById('authModal').style.display='flex'}}).catch(function(){document.getElementById('authModal').style.display='flex'});
 // 水印
 (function(){var c=document.getElementById('wmContainer');var ws=['机密资料','donk6nop','机密资料','993823850','机密资料'];for(var i=0;i<15;i++){var d=document.createElement('div');d.className='wm';d.textContent=ws[i%ws.length];d.style.top=(i*7)+'%';d.style.left=((i*17)%85)+'%';c.appendChild(d)}})();
 // 工具
